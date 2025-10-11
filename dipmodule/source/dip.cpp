@@ -49,10 +49,6 @@ namespace ProxiIOS { namespace DIP {
 		memset(AllocatedPatches, 0, sizeof(AllocatedPatches));
 		Clusters = false;
 
-#ifdef YARR
-		Provider = NULL;
-#endif
-
 		ShiftBase = 0x200000000ULL;
 		PatchPartition = 0;
 
@@ -191,14 +187,7 @@ namespace ProxiIOS { namespace DIP {
 
 				return AddPatch(PatchType::File, &file);
 			}
-#ifdef YARR
-			case Ioctl::SetFileProvider:
-				LogPrintf("IOCTL: SetFileProvider(\"%s\");\n", (const char*)message->ioctl.buffer_in);
-				Provider = new FileProvider(this, (const char*)message->ioctl.buffer_in);
-				if (!Provider)
-					return -1;
-				return 1;
-#endif
+
 			case Ioctl::SetShiftBase:
 				ShiftBase = ((u64)buffer_in[0] << 32) | buffer_in[1];
 				LogPrintf("IOCTL: SetShiftBase(0x%08x%08x);\n", (u32)(ShiftBase >> 32), (u32)ShiftBase);
@@ -648,21 +637,10 @@ namespace ProxiIOS { namespace DIP {
 	}
 	int DIP::ForwardIoctl(ipcmessage* message, bool bypass)
 	{
-#ifdef YARR
-		if (Provider && !bypass)
-			return Provider->HandleIoctl(message);
-		else
-#endif
 			return ProxyModule::ForwardIoctl(message);
-
 	}
 	int DIP::ForwardIoctlv(ipcmessage* message, bool bypass)
 	{
-#ifdef YARR
-		if (Provider && !bypass)
-			return Provider->HandleIoctlv(message);
-		else
-#endif
 			return ProxyModule::ForwardIoctlv(message);
 	}
 } }

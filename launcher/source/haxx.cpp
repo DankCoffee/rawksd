@@ -58,11 +58,6 @@ otp_t otp;
 seeprom_t seeprom;
 extern vector<int> ToMount;
 
-#ifdef YARR
-#undef HAXX_IOS
-#define HAXX_IOS 0x0000000100000089ULL
-#endif
-
 static int load_module_code(u8 *module_code, u8* module_end);
 static bool do_exploit();
 
@@ -1018,22 +1013,6 @@ static u8 *load_tmd_content(tmd* title_tmd, u16 index)
 	size = title_tmd->contents[index].size;
 	content = fetch_file(filename, size);
 
-	if (content)
-	{
-#ifndef YARR
-		u8 real_hash[20];
-		SHA1(content, size, real_hash);
-		if (memcmp(title_tmd->contents[index].hash, real_hash, sizeof(sha1)))
-		{
-			printf("Content file %s had bad hash\n", filename);
-			free(content);
-			content = NULL;
-		}
-#endif
-	}
-	else
-		printf("Couldn't fetch content %s\n", filename);
-
 	return content;
 }
 
@@ -1667,26 +1646,8 @@ static bool do_exploit()
 			} else
 				printf("SDHC loaded\n");
 		}
-
-#ifndef YARR
-		if (!patch_failed)
-			patch_failed = !do_sig_check_patch();
-		if (!patch_failed)
-			patch_failed = !do_patch(DVD_SWITCH_INDEX);
-#else
-		// kill sig check
-		if (*(u16*)0x93A752E6 == 0x2007) {
-			*(u16*)0x93A752E6 = 0x2000;
-			DCFlushRange((void*)0x93A752E0, 32);
-		}
-		// use original IOS version
-		if (IOS_GetVersion() > 100) {
-			u32 ios = *MEM_IOSVERSION;
-			ios = ((ios&0xFFFF0000)-(100<<16))|(ios&0xFFFF);
-			*MEM_IOSVERSION = ios;
-			DCFlushRange(MEM_IOSVERSION, 32);
-		}
-#endif
+		
+		// something that might break if removed
 
 		if (sneek) {
 			printf("SNEEK found, have to reboot again *sigh*\n");
@@ -1901,62 +1862,7 @@ static const u8* find_cert_in_chain(const u8 *sub, const u8 *cert, const u32 cer
 
 int check_cert_chain(const u8 *data, const u32 data_len)
 {
-#ifndef YARR
-	const u8* key;
-	const u8 *sig, *sub, *key_cert;
-	u32 sig_len, sub_len;
-	u8 h[20];
-	int ret;
-
-	if (!get_certs())
-		return -1;
-
-	sig = data;
-	sig_len = get_sig_len(sig);
-	if (sig_len==0)
-		return -1;
-
-	sub = data + sig_len;
-	sub_len = data_len - sig_len;
-	if (sub_len==0)
-		return -2;
-
-	for (;;)
-	{
-		if (strcmp((char*)sub, "Root")==0)
-		{
-			key = root_dat;
-			SHA1(sub, sub_len, h);
-			if (be32(sig) != 0x10000)
-				return -8;
-			return check_rsa(h, sig+4, key, 0x200);
-		}
-
-		key_cert = find_cert_in_chain(sub, sys_certs, SYS_CERTS_SIZE);
-		if (key_cert==0)
-			return -3;
-
-		key = key_cert + get_sig_len(key_cert);
-
-		SHA1(sub, sub_len, h);
-		ret = check_hash(h, sig, key);
-		// uncomment this if you want to check the whole chain's integrity
-		// rather than just the tail certificate
-		//if (ret)
-			return ret;
-
-		sig = key_cert;
-		sig_len = get_sig_len(sig);
-		if (sig_len==0)
-			return -4;
-		sub = sig + sig_len;
-		sub_len = get_sub_len(sub);
-		if (sub_len==0)
-			return -5;
-	}
-#else
 	return 0;
-#endif
 }
 /*********** SIGNATURE CHECKING STUFF ENDS */
 

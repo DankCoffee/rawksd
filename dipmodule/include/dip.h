@@ -124,9 +124,7 @@ namespace ProxiIOS { namespace DIP {
 			void* Patches[PatchType::Max];
 
 			bool Clusters;
-#ifdef YARR
-			DiProvider* Provider;
-#endif
+			
 			DIP();
 
 			int HandleOpen(ipcmessage* message);

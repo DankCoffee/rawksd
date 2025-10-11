@@ -174,16 +174,6 @@ int RVL_AddEmu(const char* nandpath, const char* external, int clone)
 	return IOS_Ioctlv(fd, Ioctl::AddEmu, 3, 0, vec);
 }
 
-int RVL_BanDLC(u32 title)
-{
-#ifndef YARR
-	ioctlbuffer[0] = title;
-	return IOS_Ioctl(fd, Ioctl::BanTitle, ioctlbuffer, 4, NULL, 0);
-#else
-	return 0;
-#endif
-}
-
 int RVL_DLC(const char* path)
 {
 	return IOS_Ioctl(fd, Ioctl::DLC, (void*)path, strlen(path) + 1, NULL, 0);
